@@ -1,0 +1,176 @@
+C51 COMPILER V9.51   MAIN                                                                  09/03/2024 09:04:41 PAGE 1   
+
+
+C51 COMPILER V9.51, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\output\main.obj
+COMPILER INVOKED BY: F:\Keil\C51\BIN\C51.EXE source\main.c BROWSE INCDIR(.\inc) DEBUG OBJECTEXTEND PRINT(.\main.lst) TAB
+                    -S(2) OBJECT(.\output\main.obj)
+
+line level    source
+
+   1          #include "STC15F2K60S2.H"        //必须。
+   2          #include "sys.H"                 //必须。
+   3          #include "displayer.H" 
+   4          #include "key.h"
+   5          #include "adc.h"
+   6          #include "uart1.h"
+   7          #include "uart2.h"
+   8          
+   9          code unsigned long SysClock=11059200;         //必须。定义系统工作时钟频率(Hz)，用户必须修改成与实际工作频
+             -率（下载时选择的）一致
+  10          #ifdef _displayer_H_                          //显示模块选用时必须。（数码管显示译码表，用戶可修改、增加等
+             -） 
+  11          // code char decode_table[]={0x3f,0x06,0x5b,0x4f,0x66,0x6d,0x7d,0x07,0x7f,0x6f,0x00,0x08,0x40,0x01, 0x41, 
+             -0x48, 
+  12          //                /* 序号:   0   1    2    3    4     5    6    7   8    9   10    11   12   13    14     15 
+             -    */
+  13          //                 /* 显示:   0   1    2    3    4     5    6    7   8    9  (无)   下-  中-  上-  上中-  
+             -中下-   */  
+  14          //                         0x3f|0x80,0x06|0x80,0x5b|0x80,0x4f|0x80,0x66|0x80,0x6d|0x80,0x7d|0x80,0x07|0x80
+             -,0x7f|0x80,0x6f|0x80 };  
+  15          //              /* 带小数点     0         1         2         3         4         5         6         7   
+             -      8         9        */
+  16          code char decode_table[]={0x3e,0x6d,0x7c,0x38,0x79,0x00};
+  17          #endif
+  18          
+  19          unsigned char keynum[] = {0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x10,0x20,0x30,0x40,0x50,0x60,0x70};
+  20          char ble = 'u';
+  21          
+  22          void my100mS_callback()
+  23          { unsigned char a;
+  24   1        if( a != 0) a=a<<1;
+  25   1          else a=0x01;
+  26   1        LedPrint(a);
+  27   1      }
+  28          
+  29          void key_callback(){
+  30   1        char k;
+  31   1        k = GetKeyAct(enumKey1);
+  32   1        if(k == enumKeyPress){
+  33   2          if(ble == 'u') Uart1Print(keynum,1);
+  34   2          else if(ble == 'b') Uart2Print(keynum,1);
+  35   2        }
+  36   1        else if(k == enumKeyRelease){
+  37   2          if(ble == 'u') Uart1Print(keynum+7,1);
+  38   2          else if(ble == 'b') Uart2Print(keynum+7,1);
+  39   2        }
+  40   1        k = GetKeyAct(enumKey2);
+  41   1        if(k == enumKeyPress){
+  42   2          if(ble == 'u') Uart1Print(keynum+1,1);
+  43   2          else if(ble == 'b') Uart2Print(keynum+1,1);
+  44   2        }
+  45   1        else if(k == enumKeyRelease){
+  46   2          if(ble == 'u') Uart1Print(keynum+8,1);
+  47   2          else if(ble == 'b') Uart2Print(keynum+8,1);
+C51 COMPILER V9.51   MAIN                                                                  09/03/2024 09:04:41 PAGE 2   
+
+  48   2        }
+  49   1      //  如果启用了ADC模块，按键3（Key3）任何操作在本模块不可检测到和有任何信息反应
+  50   1      //  k = GetKeyAct(enumKey3);
+  51   1      //  if(k == enumKeyPress){
+  52   1      //    Uart1Print(keynum+2,1);
+  53   1      // }
+  54   1      }
+  55          
+  56          void nav_callback(){
+  57   1        char k;
+  58   1        k = GetAdcNavAct(enumAdcNavKey3);
+  59   1        if(k == enumKeyPress){
+  60   2          if(ble == 'u'){
+  61   3            ble = 'b';
+  62   3            Seg7Print(2,3,4,5,5,5,5,5);
+  63   3          }
+  64   2          else if(ble == 'b'){
+  65   3            ble = 'u';
+  66   3            Seg7Print(0,1,2,5,5,5,5,5);
+  67   3          }
+  68   2        }
+  69   1        k = GetAdcNavAct(enumAdcNavKeyUp);
+  70   1        if(k == enumKeyPress){
+  71   2          if(ble == 'u') Uart1Print(keynum+2,1);
+  72   2          else if(ble == 'b') Uart2Print(keynum+2,1);
+  73   2        }
+  74   1        else if(k == enumKeyRelease){
+  75   2          if(ble == 'u') Uart1Print(keynum+9,1);
+  76   2          else if(ble == 'b') Uart2Print(keynum+9,1);
+  77   2        }
+  78   1        k = GetAdcNavAct(enumAdcNavKeyDown);
+  79   1        if(k == enumKeyPress){
+  80   2          if(ble == 'u') Uart1Print(keynum+3,1);
+  81   2          else if(ble == 'b') Uart2Print(keynum+3,1);
+  82   2        }
+  83   1        else if(k == enumKeyRelease){
+  84   2          if(ble == 'u') Uart1Print(keynum+10,1);
+  85   2          else if(ble == 'b') Uart2Print(keynum+10,1);
+  86   2        }
+  87   1        k = GetAdcNavAct(enumAdcNavKeyLeft);
+  88   1        if(k == enumKeyPress){
+  89   2          if(ble == 'u') Uart1Print(keynum+4,1);
+  90   2          else if(ble == 'b') Uart2Print(keynum+4,1);
+  91   2        }
+  92   1        else if(k == enumKeyRelease){
+  93   2          if(ble == 'u') Uart1Print(keynum+11,1);
+  94   2          else if(ble == 'b') Uart2Print(keynum+11,1);
+  95   2        }
+  96   1        k = GetAdcNavAct(enumAdcNavKeyRight);
+  97   1        if(k == enumKeyPress){
+  98   2          if(ble == 'u') Uart1Print(keynum+5,1);
+  99   2          else if(ble == 'b') Uart2Print(keynum+5,1);
+ 100   2        }
+ 101   1        else if(k == enumKeyRelease){
+ 102   2          if(ble == 'u') Uart1Print(keynum+12,1);
+ 103   2          else if(ble == 'b') Uart2Print(keynum+12,1);
+ 104   2        }
+ 105   1        k = GetAdcNavAct(enumAdcNavKeyCenter);
+ 106   1        if(k == enumKeyPress){
+ 107   2          if(ble == 'u') Uart1Print(keynum+6,1);
+ 108   2          else if(ble == 'b') Uart2Print(keynum+6,1);
+ 109   2        }
+C51 COMPILER V9.51   MAIN                                                                  09/03/2024 09:04:41 PAGE 3   
+
+ 110   1        else if(k == enumKeyRelease){
+ 111   2          if(ble == 'u') Uart1Print(keynum+13,1);
+ 112   2          else if(ble == 'b') Uart2Print(keynum+13,1);
+ 113   2        }
+ 114   1        
+ 115   1      }
+ 116          
+ 117          void uart2Receive_callback(){
+ 118   1        SetUart2Rxd(keynum,1,0,0);
+ 119   1        Uart1Print(keynum,1);
+ 120   1      }
+ 121          
+ 122          void main() 
+ 123          { Uart1Init(2400);
+ 124   1        Uart2Init(9600,Uart2UsedforEXT);
+ 125   1        KeyInit();
+ 126   1      //      ADCexpEXT   :  不含对扩展接口EXT设置ADC功能（EXT上P1.0、P1.1可作数字IO功能使用）    
+ 127   1        AdcInit(ADCexpEXT);
+ 128   1        DisplayerInit();
+ 129   1        
+ 130   1        SetDisplayerArea(0,7);  
+ 131   1        Seg7Print(0,1,2,5,5,5,5,5); 
+ 132   1        SetEventCallBack(enumEventSys100mS, my100mS_callback);
+ 133   1        SetEventCallBack(enumEventNav, nav_callback);
+ 134   1        SetEventCallBack(enumEventKey, key_callback);
+ 135   1        SetEventCallBack(enumEventUart2Rxd, uart2Receive_callback);
+ 136   1        
+ 137   1        MySTC_Init();     
+ 138   1        while(1)              
+ 139   1          { MySTC_OS();    
+ 140   2          }              
+ 141   1      }                 
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    842    ----
+   CONSTANT SIZE    =     10    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     15       3
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
