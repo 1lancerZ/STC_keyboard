@@ -2,6 +2,7 @@ import serial
 import serial.tools.list_ports
 import json
 import threading
+import time
 from pynput.keyboard import Controller, Key
 import tkinter as tk
 from tkinter import messagebox, filedialog
@@ -64,15 +65,90 @@ def apply_default_mappings():
         '70': 'm_release'
     }
 
+
 def handle_key_event(data, keyboard, key_mappings):
+    """Handle the key event received from the serial port."""
     if data in key_mappings:
         action = key_mappings[data]
-        if action.endswith('_release'):
-            key = map_key_action(action.replace('_release', ''))
-            keyboard.release(key)
-        else:
-            key = map_key_action(action)
+
+        # Check if the action is a macro (contains spaces or multiple characters)
+        is_macro = ' ' in action
+
+        if not is_macro:  # Single key mapping
+            if action.endswith('_release'):
+                key = map_key_action(action.replace('_release', ''))
+                keyboard.release(key)
+            else:
+                key = map_key_action(action)
+                keyboard.press(key)
+
+        else:  # Macro mapping
+            # Only handle key press signals, not release signals
+            if not action.endswith('_release'):
+                execute_macro(action, keyboard)
+
+
+def execute_macro(macro, keyboard):
+    """Executes a macro string, where each step is separated by a space."""
+    steps = macro.split()  # Split the macro into steps by spaces
+
+    for step in steps:
+        # Check if step is a known special key or a multi-key combination
+        if step in ['up', 'down', 'left', 'right', 'space']:  # Handle special keys
+            key = map_key_action(step)
             keyboard.press(key)
+            time.sleep(0.02)  # Short delay for key press
+            keyboard.release(key)
+
+        elif len(step) > 1 and not any(char in step for char in ['up', 'down', 'left', 'right', 'space']):
+            # Handle simultaneous key press (e.g., 'sd' means press 's' and 'd' together)
+            keys = list(step)
+            pressed_keys = []
+
+            for key in keys:
+                try:
+                    mapped_key = map_key_action(key)
+                    keyboard.press(mapped_key)
+                    pressed_keys.append(mapped_key)  # Track the pressed keys
+                except ValueError as e:
+                    print(f"Error mapping key {key}: {e}")
+                    continue
+
+            time.sleep(0.02)  # Short delay for simultaneous key press
+
+            # Release all keys that were pressed together
+            for key in pressed_keys:
+                keyboard.release(key)
+
+        else:  # Handle single key press
+            try:
+                key = map_key_action(step)  # Map the key action to pynput key
+                keyboard.press(key)  # Press the mapped key
+                time.sleep(0.01)  # Short delay for key press
+                keyboard.release(key)  # Release the mapped key
+            except ValueError as e:
+                print(f"Error mapping key {step}: {e}")
+                continue  # Skip to the next key if an error occurs
+
+        time.sleep(0.02)  # Delay between steps
+
+
+
+def map_key_action(action):
+    """Maps action strings to pynput keys or characters."""
+    if action == 'up':
+        return Key.up
+    elif action == 'down':
+        return Key.down
+    elif action == 'left':
+        return Key.left
+    elif action == 'right':
+        return Key.right
+    elif action == 'space':  # Handling space key
+        return Key.space
+    else:
+        return action  # Return character as is
+
 
 def start_serial():
     """Automatically detects the suitable serial port and starts the communication."""
@@ -160,13 +236,13 @@ def update_mappings_window():
 
     # Create input fields for each button
     fields = [
-        ('K1 Press (11)', k1_var),
-        ('K2 Press (22)', k2_var),
-        ('Up Press (33)', up_var),
-        ('Down Press (44)', down_var),
-        ('Left Press (55)', left_var),
-        ('Right Press (66)', right_var),
-        ('Center Press (77)', center_var)
+        ('K1', k1_var),
+        ('K2', k2_var),
+        ('Up', up_var),
+        ('Down', down_var),
+        ('Left', left_var),
+        ('Right', right_var),
+        ('Center', center_var)
     ]
 
     for i, (label_text, var) in enumerate(fields):
